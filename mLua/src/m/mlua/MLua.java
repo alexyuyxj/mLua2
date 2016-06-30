@@ -7,7 +7,6 @@ import java.io.InputStream;
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
 import org.luaj.vm2.LuaError;
-import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.BaseLib;
 import org.luaj.vm2.lib.ResourceFinder;
@@ -20,7 +19,7 @@ public class MLua {
 	
 	public MLua(String launcher) {
 		this.launcher = launcher;
-		Globals globals = new Globals();
+		globals = new Globals();
 		globals.load(new BaseLib());
 		globals.load(new MLuaLib());
 		LoadState.install(globals);
@@ -64,13 +63,16 @@ public class MLua {
 		};
 	}
 	
-	public void start(Object... args) {
+	public void start() {
+		start(null);
+	}
+	
+	public void start(Object arg) {
 		try {
-			if (args.length == 0) {
+			if (arg == null) {
 				globals.loadfile(launcher).call();
 			} else {
-				LuaValue luaArgs = MLuaLib.toLuaValue(args);
-				globals.loadfile(launcher).call(luaArgs);
+				globals.loadfile(launcher).call(MLuaLib.toLuaValue(arg));
 			}
 		} catch (Throwable t) {
 			throw new LuaError(t);
