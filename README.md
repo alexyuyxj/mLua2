@@ -69,6 +69,7 @@ import(className)                             | 向ReflectHelper类缓存中导�
 import(name, className)                       | 向ReflectHelper类缓存中导入一个类，并将此缓存的key<br/>设置为指定名称
 new(className, ...)                           | 构造一个java实例，参数className是import函数的返回值，<br/>后续参数为java构造方法的输入参数
 createProxy(proxyTable, ...)                  | 构造一个java接口代理。参数proxyTable是一个lua的table，<br/>其中的key必须与java接口类的方法名称相同，key对应的<br/>value是一个lua的function，function的参数列表和返回值也<br/>必须与java接口相同。proxyTable后的参数是被实现的接口<br/>列表名称，皆为string，由import函数返回。此函数将返回一<br/>个java接口代理实例，可将此实例传回java端并进行操作，<br/>当实例中的接口函数被调用时，mLua会调用proxyTable中的<br/>对应funtion代码完成操作
+getClass(className)                           | 获取一个缓存到ReflectHelper中的类实例，用于后续调用静<br/>态成员
 
 # 例子
 
