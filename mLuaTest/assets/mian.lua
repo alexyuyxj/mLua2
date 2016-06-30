@@ -1,5 +1,6 @@
-import("ReflectRunnable", "com.mob.tools.utils.ReflectHelper$ReflectRunnable")
 local context = ...
+
+import("ReflectRunnable", "m.mlua.ReflectHelper$ReflectRunnable")
 
 local function main()
   print("hello world from mLua", 123, true)
