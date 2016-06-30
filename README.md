@@ -25,7 +25,8 @@ mLua2的java端方法集中在MLua中：
 < init >(String)            | 构造函数，其中的参数表示解析器启动后首先执行的lua脚本
 setLoadFromFile(String)     | 设置从文件系统中加载lua脚本。此方法应当在start前调用，并且与<br/>setLoadFromAssets相斥
 setLoadFromAssets(Context)  | 设置从assets目录中加载lua脚本，此方法应当在start前调用，并且与<br/>setLoadFromFile相斥
-start(Object)               | 传递参数列表并启动lua解析器
+start()                     | 启动lua解析器
+start(Object)               | 传递参数并启动lua解析器
 
 由于lua中调用java api变得十分方便，因此mLua2不再提供往解析器中推入自定义全局函数的方法。
 
