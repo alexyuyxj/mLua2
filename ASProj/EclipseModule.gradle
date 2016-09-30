@@ -1,0 +1,202 @@
+// for android project from eclipse
+
+class GlobalVariables {
+    public static def refreshTime = 0l
+    public static def buildTools
+    public static def compileSdkVersion
+    public static def proguardFile
+    public static def targetSdkVersion
+    public static def minSdkVersion
+    public static def applicationId
+    public static def versionCode
+    public static def versionName
+}
+
+// ================================
+
+def init() {
+    def time = System.currentTimeMillis()
+    if (time - GlobalVariables.refreshTime < 1000l) {
+        // a terrible ide like android studio can not trigger two buildings in 1 second
+        GlobalVariables.refreshTime = time
+        return
+    }
+
+    // read local.properties to parse android-sdk home, then find out the newest build tools
+    def localProperties = new File(rootProject.projectDir, "local.properties")
+    if (localProperties.exists()) {
+        def properties = new Properties()
+        localProperties.withInputStream {
+            instr->properties.load(instr)
+        }
+        def sdkDir = properties.getProperty('sdk.dir')
+        def buildTools = new File(sdkDir, "build-tools")
+        if (buildTools.exists()) {
+            def tools = buildTools.list()
+            if (tools != null) {
+                Arrays.sort(tools)
+                GlobalVariables.buildTools = tools[tools.length - 1]
+            }
+        }
+    }
+    if (GlobalVariables.buildTools == null) {
+        throw RuntimeException("Faile to find build tools")
+    }
+
+    // determine the first application type module path
+    // in most cases, this module is the right module we are going to build
+    def firstProjectPath = null
+    def taskRequests = gradle.startParameter.taskRequests
+    if (taskRequests == null || taskRequests.isEmpty()) {
+        for (def ent : rootProject.childProjects.entrySet()) {
+            if (!isLibrary(ent.getValue().projectDir)) {
+                firstProjectPath = project(":" + ent.getKey()).projectDir.getAbsolutePath()
+                break
+            }
+        }
+    } else {
+        def args = gradle.startParameter.taskRequests.get(0).args
+        for (def arg : args) {
+            if (arg.startsWith(":")) {
+                def proj = project(":" + arg.substring(1).split(":")[0])
+                if (!isLibrary(proj.projectDir)) {
+                    firstProjectPath = proj.projectDir.getAbsolutePath()
+                    break
+                }
+            }
+        }
+    }
+    if (firstProjectPath == null) {
+        throw RuntimeException("Faile to find main project path")
+    }
+
+    // parse the project.properties of the application module to find out the compile sdk level
+    // default level is 19
+    GlobalVariables.compileSdkVersion = 19
+    def projProp = new File(firstProjectPath, "project.properties")
+    if (projProp.exists()) {
+        def properties = new Properties()
+        projProp.withInputStream {
+            instr->properties.load(instr)
+        }
+        def target = properties.getProperty('target').trim()
+        def pref = "android-"
+        if (target != null && target.startsWith(pref)) {
+            try {
+                GlobalVariables.compileSdkVersion = Integer.parseInt(target.substring(pref.length()))
+            } catch (Throwable t) {}
+        }
+    }
+
+    // determine the path of proguard config file
+    def file = new File(firstProjectPath, "proguard-project.txt")
+    GlobalVariables.proguardFile = (file).getAbsolutePath()
+
+    // parse the AndroidManifest of the application module, our defaultConfig is copied from here
+    file = new File(firstProjectPath, "AndroidManifest.xml")
+    def xml = new XmlSlurper()
+    def firstManifest = xml.parse(file)
+    try {
+        def tmpValue = firstManifest.getAt("uses-sdk").getProperty('@android:targetSdkVersion').toString()
+        GlobalVariables.targetSdkVersion = Integer.parseInt(tmpValue)
+    } catch (Throwable t) {
+        GlobalVariables.targetSdkVersion = GlobalVariables.compileSdkVersion
+    }
+    try {
+        def tmpValue = firstManifest.getAt("uses-sdk").getProperty('@android:minSdkVersion').toString()
+        GlobalVariables.minSdkVersion = Integer.parseInt(tmpValue)
+    } catch (Throwable t) {
+        GlobalVariables.minSdkVersion = GlobalVariables.targetSdkVersion
+    }
+    GlobalVariables.applicationId = firstManifest.getProperty('@package').toString()
+    try {
+        def tmpValue = firstManifest.getProperty('@android:versionCode').toString()
+        GlobalVariables.versionCode = Integer.parseInt(tmpValue)
+    } catch (Throwable t) {
+        GlobalVariables.versionCode = 1
+    }
+    try {
+        GlobalVariables.versionName = firstManifest.getProperty('@android:versionName').toString()
+    } catch (Throwable t) {
+        GlobalVariables.versionName = "1.0"
+    }
+
+    // update refreshTime and print the result
+    GlobalVariables.refreshTime = time
+    println("================================")
+    println("buildTools       : " + GlobalVariables.buildTools)
+    println("compileSdkVersion: " + GlobalVariables.compileSdkVersion)
+    println("proguardFile     : " + GlobalVariables.proguardFile)
+    println("targetSdkVersion : " + GlobalVariables.targetSdkVersion)
+    println("minSdkVersion    : " + GlobalVariables.minSdkVersion)
+    println("applicationId    : " + GlobalVariables.applicationId)
+    println("versionCode      : " + GlobalVariables.versionCode)
+    println("versionName      : " + GlobalVariables.versionName)
+    println("================================")
+}
+
+// parse the project.properties in the given module path to find out if this module is a library module
+def isLibrary(def peojDir) {
+    def projProp = new File(peojDir, "project.properties")
+    def res = false
+    if (projProp.exists()) {
+        def properties = new Properties()
+        projProp.withInputStream {
+            instr->properties.load(instr)
+        }
+        def target = properties.getProperty('android.library')
+        res = "true".equals(target)
+    }
+    return res
+}
+
+// ================================
+
+android {
+    init()
+
+    compileSdkVersion GlobalVariables.compileSdkVersion
+    buildToolsVersion GlobalVariables.buildTools
+
+    defaultConfig {
+        if (!isLibrary(projectDir)) {
+            applicationId GlobalVariables.applicationId
+        }
+        minSdkVersion GlobalVariables.minSdkVersion
+        targetSdkVersion GlobalVariables.targetSdkVersion
+        versionCode GlobalVariables.versionCode
+        versionName GlobalVariables.versionName
+    }
+
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+            assets.srcDirs = ['assets']
+            java.srcDirs = ['src']
+            aidl.srcDirs = ['src']
+            res.srcDirs = ['res']
+            jniLibs.srcDirs = ['libs']
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled !isLibrary(projectDir)
+            proguardFiles GlobalVariables.proguardFile
+        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+}

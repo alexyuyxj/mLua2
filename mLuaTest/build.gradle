@@ -1,0 +1,6 @@
+apply plugin: 'com.android.application'
+apply from: '../ASProj/EclipseModule.gradle'
+
+dependencies {
+    compile project(':mLua2')
+}

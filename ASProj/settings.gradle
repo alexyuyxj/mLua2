@@ -1,0 +1,3 @@
+include ':mLua2',':mLuaTest'
+project(':mLua2').projectDir = new File('../mLua2')
+project(':mLuaTest').projectDir = new File('../mLuaTest')

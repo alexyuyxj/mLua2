@@ -8,7 +8,7 @@ public class MainActivity extends Activity {
 
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		MLua mLua = new MLua("mian.lua");
+		MLua mLua = new MLua("main.lua");
 		mLua.setLoadFromAssets(this);
 		mLua.start(getApplication());
 	}

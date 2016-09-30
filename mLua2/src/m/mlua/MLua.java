@@ -1,17 +1,22 @@
 package m.mlua;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
+import android.content.Context;
 
 import org.luaj.vm2.Globals;
 import org.luaj.vm2.LoadState;
 import org.luaj.vm2.LuaError;
 import org.luaj.vm2.compiler.LuaC;
 import org.luaj.vm2.lib.BaseLib;
+import org.luaj.vm2.lib.Bit32Lib;
+import org.luaj.vm2.lib.CoroutineLib;
+import org.luaj.vm2.lib.PackageLib;
 import org.luaj.vm2.lib.ResourceFinder;
+import org.luaj.vm2.lib.StringLib;
+import org.luaj.vm2.lib.TableLib;
 
-import android.content.Context;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 
 public class MLua {
 	private Globals globals;
@@ -50,7 +55,8 @@ public class MLua {
 			}
 		};
 	}
-	
+
+	int i = 0;
 	public void setLoadFromAssets(Context context) {
 		final Context app = context.getApplicationContext();
 		globals.finder = new ResourceFinder() {
@@ -68,16 +74,12 @@ public class MLua {
 		};
 	}
 	
-	public void start() {
-		start(null);
-	}
-	
-	public void start(Object arg) {
+	public void start(Object... args) {
 		try {
-			if (arg == null) {
+			if (args == null) {
 				globals.loadfile(launcher).call();
 			} else {
-				globals.loadfile(launcher).call(MLuaLib.toLuaValue(arg));
+				globals.loadfile(launcher).call(MLuaLib.toLuaValue(args));
 			}
 		} catch (Throwable t) {
 			throw new LuaError(t);

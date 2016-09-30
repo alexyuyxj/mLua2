@@ -18,13 +18,15 @@ public class MLuaLib extends VarArgFunction {
 	private static final int GET_CLASS              = 3;
 	private static final int CREATE_PROXY           = 4;
 	private static final int PRINT                  = 5;
+	private static final int GET_TYPE               = 6;
 	
 	private static final String[] NAMES = {
 		"import",
 		"new",
 		"getClass",
 		"createProxy",
-		"print"
+		"print",
+		"getType"
 	};
 	
 	static final Object toJavaValue(LuaValue value) {
@@ -96,6 +98,7 @@ public class MLuaLib extends VarArgFunction {
 				case GET_CLASS: return onGetClass(args);
 				case CREATE_PROXY: return onCreateProxy(args);
 				case PRINT: return onPrint(args);
+				case GET_TYPE: return onGetType(args);
 			}
 		} catch (Throwable t) {
 			throw new LuaError(t);
@@ -137,7 +140,7 @@ public class MLuaLib extends VarArgFunction {
 			return toLuaValue(ReflectHelper.newInstance(className));
 		}
 	}
-	
+
 	private Varargs onGetClass(Varargs args) throws Throwable {
 		String name = args.checkjstring(1);
 		return toLuaValue(ReflectHelper.getClass(name));
@@ -191,6 +194,35 @@ public class MLuaLib extends VarArgFunction {
 		}
 		System.out.println(sb.toString());
 		return NIL;
+	}
+
+	private Varargs onGetType(Varargs args) throws Throwable {
+		LuaValue value = args.arg(1);
+		if (value == null || value.isnil()) {
+			return toLuaValue("nil");
+		} else if (value.isboolean()) {
+			return toLuaValue("boolean");
+		} else if (value.isnumber()) {
+			return toLuaValue("number");
+		} else if (value.isstring()) {
+			return toLuaValue("string");
+		} else if (value.isuserdata()) {
+			if (value instanceof RefUserdata) {
+				Object obj = ((RefUserdata) value).m_instance;
+				if (obj != null) {
+					return toLuaValue("userdata[" + obj.getClass().getName() + "]");
+				}
+			}
+			return toLuaValue("userdata");
+		} else if (value.isfunction()) {
+			return toLuaValue("function");
+		} else if (value.isthread()) {
+			return toLuaValue("thread");
+		} else if (value.istable()) {
+			return toLuaValue("table");
+		} else {
+			return toLuaValue("unknown");
+		}
 	}
 	
 }
